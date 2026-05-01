@@ -45,32 +45,3 @@ copyright = "Copyright 2026 GameSome. Licensed under GPL-3.0-or-later."
 license = [
     "GPL-3.0-or-later",
 ]
-
-# Dependencies (Blender bundled)
-dependencies = [
-    "numpy",
-]
-
-# Wheel dependencies (if needed)
-# wheels = []
-
-# Optional: Permission requirements
-permissions = [
-    "files",        # Save sprite sheets to disk
-    "render",       # Render frames
-]
-
-# Platform support
-platforms = [
-    "windows-x64",
-    "macos-x64",
-    "macos-arm64",
-    "linux-x64",
-]
-
-# Screenshots for the store listing
-# Add these files to your extension directory
-# screenshots = [
-#     "screenshot_01_panel.png",
-#     "screenshot_02_results.png",
-# ]
