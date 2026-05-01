@@ -168,6 +168,21 @@ This project is licensed under GPL-3.0-or-later. See the LICENSE file for detail
 
 Contributions are welcome!
 
+General Disclaimer:
+The Sprite Sheet Generator ("the Software") is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and noninfringement. In no event shall the authors, contributors, or copyright holders be liable for any claim, damages, or other liability, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the Software or the use or other dealings in the Software.
+
+Software Disclaimer
+No Guarantee of Performance
+While efforts have been made to ensure the Software functions correctly, we do not guarantee that:
+
+- The Software will meet your specific requirements
+- The Software will be uninterrupted, timely, secure, or error-free
+- Any errors or defects will be corrected
+- The results obtained from using the Software will be accurate or reliable
+
+By using this extension, you agree to the disclaimer. See the Disclaimer section for a detailed explanation.
+
+
 ### Metadata Format
 ```json
 {
