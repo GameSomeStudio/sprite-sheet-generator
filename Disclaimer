@@ -1,0 +1,167 @@
+Disclaimer
+Legal Disclaimer for Sprite Sheet Generator
+Last Updated: April.2026
+
+General Disclaimer
+The Sprite Sheet Generator ("the Software") is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and noninfringement. In no event shall the authors, contributors, or copyright holders be liable for any claim, damages, or other liability, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the Software or the use or other dealings in the Software.
+
+Software Disclaimer
+No Guarantee of Performance
+While efforts have been made to ensure the Software functions correctly, we do not guarantee that:
+
+- The Software will meet your specific requirements
+- The Software will be uninterrupted, timely, secure, or error-free
+- Any errors or defects will be corrected
+- The results obtained from using the Software will be accurate or reliable
+
+Third-Party Software
+This Software operates as an add-on within Blender, a third-party software. We are not responsible for:
+
+- Compatibility issues with specific Blender versions
+- Changes in Blender's API that may affect functionality
+- Issues arising from other add-ons or modifications to Blender
+
+Asset and Content Disclaimer
+User-Generated Content
+The Software generates sprite sheets from user-provided 3D models and animations. Users are solely responsible for:
+
+- Ensuring they have the legal right to use source models and animations
+- Compliance with intellectual property laws
+- Any content created using the Software
+- Licensing of output files (sprite sheets, metadata)
+
+Copyright and Intellectual Property
+- Users must own or have appropriate licenses for all source assets
+- The Software does not claim ownership over generated sprite sheets
+- Generated content remains the intellectual property of the user
+- Users are responsible for clearing rights for commercial use of generated assets
+
+Technical Disclaimer:
+Render Quality
+- Sprite quality depends on source model quality and render settings
+- Results may vary based on Blender version and system configuration
+- The Software may not work optimally with all armature setups
+- Camera and lighting setup significantly affects output quality
+
+Data Loss
+We are not responsible for:
+
+- Loss of Blender project files
+- Corruption of source files
+- Overwritten output files
+- Data loss due to software malfunction
+
+Recommendation: Always backup your Blender project files before running batch operations.
+
+System Requirements:
+- The Software requires Blender 3.6 or newer
+
+Performance depends on system specifications:
+- Large animations with many frames require significant processing time
+- Adequate disk space is required for temporary render files
+
+Limitation of Liability:
+Maximum Liability
+To the fullest extent permitted by applicable law, the authors, contributors, and copyright holders shall not be liable for:
+
+- Direct, indirect, incidental, special, consequential, or punitive damages
+- Loss of profits, data, use, goodwill, or other intangible losses
+- Cost of procurement of substitute goods or services
+- Any matter beyond our reasonable control
+
+Legal Jurisdiction
+This disclaimer shall be governed by and construed in accordance with the laws of the jurisdiction in which the user resides, without regard to its conflict of law provisions.
+
+Usage Restrictions
+Commercial Use
+The Software is licensed under GPL-3.0. Users may:
+
+- Use the Software for commercial projects
+- Sell assets generated with the Software
+- Modify the Software according to GPL-3.0 terms
+
+However, users:
+
+- Must comply with GPL-3.0 requirements for redistribution
+- Cannot claim the Software itself as their own
+- Must include original copyright notices
+
+Prohibited Uses
+The Software must not be used for:
+
+- Creating illegal content
+- Generating content that violates third-party rights
+- Any purpose that violates applicable laws or regulations
+- Activities that could harm, disable, or impair the Software
+
+Accuracy and Reliability
+Documentation
+Documentation is provided for informational purposes only
+We do not warrant that documentation is accurate, complete, or current
+Users should verify instructions for their specific Blender version
+
+Updates and Support
+We reserve the right to modify or discontinue the Software at any time
+Updates may introduce changes that affect existing workflows
+Support is provided on a voluntary basis
+Response times for issues are not guaranteed
+
+Third-Party Links and Dependencies
+The Software may:
+
+Reference or link to third-party resources
+
+Depend on third-party libraries (NumPy, etc.)
+
+We are not responsible for:
+- Content on third-party websites
+- Third-party library compatibility issues
+- Changes to third-party dependencies
+- Security issues in third-party code
+
+Indemnification:
+Users agree to indemnify and hold harmless the authors, contributors, and copyright holders from any claims, losses, damages, liabilities, including legal fees, arising out of:
+
+- Use or misuse of the Software
+- Violation of this disclaimer
+- Violation of third-party rights
+- Generated content that violates laws or regulations
+
+Professional Advice Disclaimer
+The Software is a technical tool and does not provide:
+
+- Legal advice regarding intellectual property
+- Artistic or design recommendations
+- Game development consulting
+- Business advice
+
+Users should seek professional advice for:
+
+- Legal matters regarding asset usage
+- Commercial game development decisions
+- Intellectual property protection
+
+Acknowledgment
+By using the Sprite Sheet Generator, you acknowledge that:
+
+- You have read and understood this disclaimer
+- You agree to be bound by its terms
+- You assume all risks associated with using the Software
+- You are responsible for complying with applicable laws
+
+Contact
+For questions about this disclaimer:
+Email: [studiogamesome@gmail.com]
+
+GitHub Issues: [https://github.com/GameSomeStudio/sprite-sheet-generator/issues]
+
+Discussion: [https://github.com/GameSomeStudio/sprite-sheet-generator/discussions]
+
+Changes to This Disclaimer
+We reserve the right to update this disclaimer at any time. Changes will be effective immediately upon posting. Users are encouraged to review this disclaimer periodically.
+
+DISCLAIMER OF WARRANTY (GPL-3.0 APPLICABLE)
+
+THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU. SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
+
+© 2026 Sprite Sheet Generator Contributors. Licensed under GPL-3.0-or-later.
