@@ -47,7 +47,7 @@ Automatic JSON metadata file with:
 - Ready for Unity, Godot, GameMaker, or custom engines
 
 ## Screenshots
-![Sprite Sheet Generator Panel](screenshots/capture.mp4)
+![Sprite Sheet Generator Panel](screenshots/screen01.png)
 ![Sprite Sheet Generator Panel](screenshots/result.png)
 
 ## Installation
