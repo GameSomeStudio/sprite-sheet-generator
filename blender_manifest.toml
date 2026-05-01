@@ -1,0 +1,76 @@
+# Blender Extension Manifest
+# https://docs.blender.org/manual/en/latest/advanced/extensions.html
+
+schema_version = "1.1.0"
+
+id = "sprite_sheet_generator"
+name = "Sprite Sheet Generator"
+tagline = "Generate sprite sheets from animations with armature rotation"
+version = "2.0.0"
+blender_version_min = "3.6.0"
+maintainer = "Gamesome - mabaci"
+type = "add-on"
+
+tags = [
+    "Animation",
+    "Render",
+    "Game Development",
+    "Pipeline",
+    "Workflow",
+    "2D",
+    "Sprite",
+]
+
+description = """
+Sprite Sheet Generator is a professional tool for converting Blender animations into sprite sheets for game development.
+
+Features:
+• Multi-animation support - Process all actions (idle, run, jump, attack, etc.) in one click
+• Dynamic sprite sizing - Automatically adjusts sprite dimensions for animations like jump that need extra space
+• Armature rotation mode - Rotates the armature instead of camera for consistent lighting across all angles
+• Frame interpolation - Reduce any animation to your target frame count with smart frame selection
+• Customizable output - Control sprite size, columns, padding, and more
+• Metadata export - Automatic JSON metadata for easy game engine integration
+• User-friendly panel - Intuitive UI in the 3D Viewport sidebar
+
+Perfect for indie game developers, pixel artists, and 3D artists creating 2D game assets.
+"""
+
+homepage_url = "https://github.com/GameSomeStudio/sprite-sheet-generator"
+support_url = "https://github.com/GameSomeStudio/sprite-sheet-generator/issues"
+bugtracker_url = "https://github.com/GameSomeStudio/sprite-sheet-generator/issues"
+
+copyright = "Copyright 2026 GameSome. Licensed under GPL-3.0-or-later."
+
+license = [
+    "GPL-3.0-or-later",
+]
+
+# Dependencies (Blender bundled)
+dependencies = [
+    "numpy",
+]
+
+# Wheel dependencies (if needed)
+# wheels = []
+
+# Optional: Permission requirements
+permissions = [
+    "files",        # Save sprite sheets to disk
+    "render",       # Render frames
+]
+
+# Platform support
+platforms = [
+    "windows-x64",
+    "macos-x64",
+    "macos-arm64",
+    "linux-x64",
+]
+
+# Screenshots for the store listing
+# Add these files to your extension directory
+# screenshots = [
+#     "screenshot_01_panel.png",
+#     "screenshot_02_results.png",
+# ]
