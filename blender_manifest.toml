@@ -45,3 +45,17 @@ copyright = "Copyright 2026 GameSome. Licensed under GPL-3.0-or-later."
 license = [
     "GPL-3.0-or-later",
 ]
+platforms = [
+    "windows-x64",
+    "macos-x64",
+    "macos-arm64",
+    "linux-x64",
+]
+permissions = [
+    "files", 
+    "render",
+]
+dependencies = [
+    "numpy",
+]
+
