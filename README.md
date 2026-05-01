@@ -46,6 +46,10 @@ Automatic JSON metadata file with:
 - Grid layout information
 - Ready for Unity, Godot, GameMaker, or custom engines
 
+## Screenshots
+![Sprite Sheet Generator Panel](screenshots/capture.mp4)
+![Sprite Sheet Generator Panel](screenshots/result.png)
+
 ## Installation
 
 From Blender Extensions 
