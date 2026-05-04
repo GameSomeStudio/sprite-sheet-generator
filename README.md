@@ -53,6 +53,7 @@ Automatic JSON metadata file with:
 
 ## Installation
 Blender 4.2.0 and newer: Install directly from Blender Extensions (Edit > Preferences > Get Extensions) or download from the GitHub Releases page.
+
 Blender 3.6+ (manual install from GitHub)
 
 From Blender Extensions 
