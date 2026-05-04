@@ -1,10 +1,10 @@
 bl_info = {
     "name": "Sprite Sheet Generator",
-    "author": "GameSome-mabaci",
-    "version": (2, 0, 0),
-    "blender": (3, 0, 0),
+    "author": "GameSome - mabaci",
+    "version": (2, 1, 0),
+    "blender": (3, 6, 0),
     "location": "View3D > Sidebar > Sprite Sheet",
-    "description": "Create a Sprite Sheet with all Animation Actions in your model.",
+    "description": "Generate sprite sheets from animations with armature rotation and dynamic sizing",
     "category": "Render",
 }
 
@@ -36,10 +36,7 @@ from bpy.types import (
 # ==================== UTILITY FUNCTIONS ====================
 
 def sanitize_filename(name):
-    """
-    Remove invalid characters from filename.
-    Windows invalid chars: < > : " / \ | ? *
-    """
+    """Remove invalid characters from filename."""
     name = re.sub(r'[<>:"/\\|?*]', '_', name)
     name = re.sub(r'_+', '_', name)
     name = name.strip('_ ')
@@ -55,21 +52,36 @@ def get_safe_temp_path(temp_dir, animation_name, angle, frame_index):
     filename = f"{safe_name}_a{angle}_f{frame_index:04d}.png"
     return os.path.join(temp_dir, filename)
 
+def show_popup(message, title="Info", icon='INFO'):
+    """Show a popup dialog with a message."""
+    def draw(self, context):
+        self.layout.label(text=message)
+    bpy.context.window_manager.popup_menu(draw, title=title, icon=icon)
+
+def show_error(message):
+    """Show an error popup."""
+    show_popup(message, title="Error", icon='ERROR')
+
+def show_warning(message):
+    """Show a warning popup."""
+    show_popup(message, title="Warning", icon='ERROR')
+
+def show_info(message):
+    """Show an info popup."""
+    show_popup(message, title="Information", icon='INFO')
+
+
 class SpriteSheetCore:
     """Core functionality for sprite sheet generation."""
     
     @staticmethod
     def get_object_bounding_box_in_frame(obj, frame, camera=None):
-        """
-        Calculate object's bounding box in camera view for a specific frame.
-        Returns NDC coordinates: (min_x, min_y, max_x, max_y)
-        """
+        """Calculate object's bounding box in camera view for a specific frame."""
         if not obj:
             return (-1, -1, 1, 1)
         
         bpy.context.scene.frame_set(frame)
         
-        # Find mesh objects
         if obj.type == 'ARMATURE':
             meshes = [child for child in obj.children if child.type == 'MESH']
             if not meshes:
@@ -125,10 +137,7 @@ class SpriteSheetCore:
     
     @staticmethod
     def calculate_animation_bounds(obj, action, frame_start, frame_end, sample_count=20):
-        """
-        Calculate maximum bounding box across an animation.
-        Returns: (width_ndc, height_ndc, center_offset_y)
-        """
+        """Calculate maximum bounding box across an animation."""
         if not obj or not action:
             return (1.0, 1.0, 0.0)
         
@@ -192,14 +201,28 @@ class SpriteSheetCore:
     
     @staticmethod
     def get_action_frame_range(action):
-        """Get the actual frame range of an action."""
-        if not action or not action.fcurves:
+        """Get the actual frame range of an action. Compatible with Blender 3.6 to 5.x."""
+        if not action:
+            return (1, 24)
+        
+        # Blender 5.x uses attribute access, older versions use dictionary-style
+        # Check if action has fcurves attribute (new API) or use fallback
+        fcurves = None
+        
+        # Try new API first (Blender 4.0+)
+        if hasattr(action, 'fcurves'):
+            fcurves = action.fcurves
+        # Fallback for very old versions (pre-3.6)
+        elif hasattr(action, 'fcurves'):
+            fcurves = action.fcurves
+        
+        if not fcurves:
             return (1, 24)
         
         frame_start = float('inf')
         frame_end = float('-inf')
         
-        for fcurve in action.fcurves:
+        for fcurve in fcurves:
             if fcurve.keyframe_points:
                 points = fcurve.keyframe_points
                 frame_start = min(frame_start, points[0].co[0])
@@ -249,17 +272,11 @@ class SpriteSheetCore:
     
     @staticmethod
     def rotate_armature(obj, angle_degrees):
-        """
-        Rotate armature around its Z-axis (vertical axis).
-        Positive angle = counter-clockwise from top view.
-        """
+        """Rotate armature around its Z-axis (vertical axis)."""
         if not obj or obj.type != 'ARMATURE':
             return
         
-        # Convert to radians
         angle_rad = math.radians(angle_degrees)
-        
-        # Apply rotation to armature's Z-axis
         obj.rotation_euler.z += angle_rad
     
     @staticmethod
@@ -279,20 +296,15 @@ class SpriteSheetCore:
     
     @staticmethod
     def position_camera_for_frame(camera, target_obj, vertical_offset=0.0):
-        """
-        Position camera to center on object with vertical offset.
-        Camera stays in place, only adjusts aim point.
-        """
+        """Position camera to center on object with vertical offset."""
         if not camera or not target_obj:
             return False
         
         obj_world_pos = target_obj.matrix_world.translation.copy()
         
-        # Calculate aim point with vertical offset
         aim_point = obj_world_pos.copy()
         aim_point.z += vertical_offset
         
-        # Keep camera position, just update rotation to aim at target
         direction = aim_point - camera.location
         rot_quat = direction.to_track_quat('-Z', 'Y')
         camera.rotation_euler = rot_quat.to_euler()
@@ -330,7 +342,8 @@ class SpriteSheetSettings(PropertyGroup):
     
     output_path: StringProperty(
         name="Output Folder",
-        default="//",
+        description="Folder to save the sprite sheet",
+        default=tempfile.gettempdir(),
         subtype='DIR_PATH'
     )
     
@@ -339,15 +352,13 @@ class SpriteSheetSettings(PropertyGroup):
         default="sprite_sheet"
     )
     
-    # Base sprite size for normal animations
     base_sprite_width: IntProperty(name="Base Width", default=64, min=16, max=512)
     base_sprite_height: IntProperty(name="Base Height", default=64, min=16, max=512)
     
-    # Dynamic sizing settings
     use_dynamic_sizing: BoolProperty(
         name="Dynamic Sizing",
         description="Auto-adjust sprite size for animations like jump",
-        default=True
+        default=False
     )
     
     max_sprite_width: IntProperty(name="Max Width", default=128, min=64, max=512)
@@ -363,18 +374,21 @@ class SpriteSheetSettings(PropertyGroup):
     
     columns: IntProperty(name="Columns", default=10, min=1, max=50)
     
-    # View angles (armature rotation)
     use_front: BoolProperty(name="Front (0°)", default=True)
     use_right: BoolProperty(name="Right (90°)", default=True)
     use_back: BoolProperty(name="Back (180°)", default=True)
     use_left: BoolProperty(name="Left (270°)", default=True)
     
-    flip_y: BoolProperty(name="Flip Y Axis", default=True)
+    flip_y: BoolProperty(
+        name="Flip Y Axis",
+        description="Flip sprites vertically to correct orientation",
+        default=False
+    )
     
     track_origin: BoolProperty(
         name="Track Origin",
         description="Camera follows object origin point each frame",
-        default=True
+        default=False
     )
     
     include_all_actions: BoolProperty(
@@ -384,7 +398,79 @@ class SpriteSheetSettings(PropertyGroup):
     
     animations: CollectionProperty(type=AnimationItem)
 
-# ============= OPERATORS =============
+# ==================== OPERATORS ====================
+
+class SPRITESHEET_OT_help(Operator):
+    """Show help and documentation"""
+    bl_idname = "spritesheet.show_help"
+    bl_label = "Help"
+    bl_description = "Show usage instructions and documentation"
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_popup(self, width=500)
+
+    def draw(self, context):
+        layout = self.layout
+
+        # Title
+        layout.label(text="Sprite Sheet Generator - Help", icon='INFO')
+        layout.separator()
+
+        # Quick Start Guide
+        box = layout.box()
+        box.label(text="Quick Start Guide:", icon='HELP')
+
+        instructions = [
+            "1. Select your armature in the 3D Viewport",
+            "2. Make sure that all actions are visible in the Dope Sheet/Action Editor.",
+            "3. Click 'Detect' to find all animations",
+            "4. Choose view angles (Front, Right, Back, Left)",
+            "5. Set output folder and filename",
+            "6. Click 'Generate Sprite Sheet'",
+        ]
+
+        for line in instructions:
+            box.label(text=line)
+
+        layout.separator()
+
+        # Tips
+        box = layout.box()
+        box.label(text="Tips:", icon='LIGHT')
+
+        tips = [
+            "• Use transparent background (Render Properties > Film > Transparent)",
+            "• Position camera at character's center height",
+            "• Enable 'Dynamic Sizing' for jump/fall animations",
+            "* Make sure the origin point is at the center of the object and armature.",
+            "• Start with low frame counts for testing",
+        ]
+
+        for tip in tips:
+            box.label(text=tip)
+
+        layout.separator()
+
+        # View Angles Info
+        box = layout.box()
+        box.label(text="View Angles:", icon='ORIENTATION_VIEW')
+
+        angles_info = [
+            "Front (0°)  - Default view",
+            "Right (90°) - Side view",
+            "Back (180°) - Behind view",
+            "Left (270°) - Other side",
+        ]
+
+        for info in angles_info:
+            box.label(text=info)
+
+        layout.separator()
+        layout.label(text="For more help, visit the GitHub repository. //github.com/GameSomeStudio", icon='URL')
+
 
 class SPRITESHEET_OT_analyze_animation(Operator):
     """Analyze selected animation's bounding box"""
@@ -401,11 +487,19 @@ class SPRITESHEET_OT_analyze_animation(Operator):
         settings = context.scene.spritesheet_settings
         obj = context.active_object
         
+        if not obj:
+            show_error("Please select an armature first.")
+            return {'CANCELLED'}
+        
+        if obj.type != 'ARMATURE':
+            show_error("Selected object must be an armature.")
+            return {'CANCELLED'}
+        
         anim = settings.animations[settings.active_animation_index]
         action = bpy.data.actions.get(anim.action_name)
         
         if not action:
-            self.report({'ERROR'}, "Action not found!")
+            show_error("Action not found! Please re-detect actions.")
             return {'CANCELLED'}
         
         width_ndc, height_ndc, center_offset = SpriteSheetCore.calculate_animation_bounds(
@@ -422,17 +516,11 @@ class SPRITESHEET_OT_analyze_animation(Operator):
         suggested_width = min(suggested_width, settings.max_sprite_width)
         suggested_height = min(suggested_height, settings.max_sprite_height)
         
-        self.report({'INFO'}, 
-            f"Analysis: Scale={max_scale:.2f}x | "
-            f"Suggested: {suggested_width}x{suggested_height}px | "
-            f"Offset: {center_offset:.2f}")
-        
-        print(f"\nAnimation Analysis: {anim.name}")
-        print(f"  NDC Width: {width_ndc:.3f}")
-        print(f"  NDC Height: {height_ndc:.3f}")
-        print(f"  Scale Factor: {max_scale:.3f}")
-        print(f"  Suggested Size: {suggested_width}x{suggested_height}px")
-        print(f"  Vertical Offset: {center_offset:.3f}")
+        show_info(
+            f"Animation: {anim.name}\n"
+            f"Scale Factor: {max_scale:.2f}x\n"
+            f"Suggested Size: {suggested_width}x{suggested_height}px"
+        )
         
         return {'FINISHED'}
 
@@ -449,7 +537,14 @@ class SPRITESHEET_OT_detect_actions(Operator):
         obj = context.active_object
         
         if not obj:
-            self.report({'ERROR'}, "Please select an armature or object")
+            show_error("Please select an armature in the 3D Viewport first.")
+            return {'CANCELLED'}
+        
+        if obj.type != 'ARMATURE':
+            show_error(
+                f"The selected object '{obj.name}' is a '{obj.type}', not an armature.\n\n"
+                "Please select an armature with animations."
+            )
             return {'CANCELLED'}
         
         if settings.include_all_actions:
@@ -458,7 +553,11 @@ class SPRITESHEET_OT_detect_actions(Operator):
             all_actions = SpriteSheetCore.get_all_actions_from_object(obj)
         
         if not all_actions:
-            self.report({'WARNING'}, "No actions found!")
+            show_warning(
+                "No actions found!\n\n"
+                "Make sure your armature has actions assigned.\n"
+                "Check the Action Editor or NLA Editor."
+            )
             return {'CANCELLED'}
         
         if self.clear_existing:
@@ -480,9 +579,9 @@ class SPRITESHEET_OT_detect_actions(Operator):
                 added_count += 1
         
         if added_count > 0:
-            self.report({'INFO'}, f"Added {added_count} new actions")
+            show_info(f"Added {added_count} new animations to the list.")
         else:
-            self.report({'INFO'}, "All actions already in list")
+            show_info("All actions are already in the list.")
         
         return {'FINISHED'}
 
@@ -494,9 +593,13 @@ class SPRITESHEET_OT_clear_list(Operator):
     
     def execute(self, context):
         settings = context.scene.spritesheet_settings
+        count = len(settings.animations)
         settings.animations.clear()
         settings.active_animation_index = -1
-        self.report({'INFO'}, "List cleared")
+        
+        if count > 0:
+            show_info(f"Removed {count} animations from the list.")
+        
         return {'FINISHED'}
 
 class SPRITESHEET_OT_add_animation(Operator):
@@ -549,15 +652,18 @@ class SPRITESHEET_OT_preview_animation(Operator):
         settings = context.scene.spritesheet_settings
         obj = context.active_object
         
+        if not obj:
+            show_error("Please select an armature first.")
+            return {'CANCELLED'}
+        
         anim = settings.animations[settings.active_animation_index]
         action = bpy.data.actions.get(anim.action_name)
         
         if action:
             SpriteSheetCore.apply_action_to_object(obj, action, anim.frame_start, anim.frame_end)
             context.scene.frame_set(anim.frame_start)
-            self.report({'INFO'}, f"'{anim.name}' loaded")
         else:
-            self.report({'WARNING'}, f"'{anim.action_name}' not found")
+            show_warning(f"Action '{anim.action_name}' not found.")
         
         return {'FINISHED'}
 
@@ -578,18 +684,50 @@ class SPRITESHEET_OT_generate(Operator):
         scene = context.scene
         camera = scene.camera
         
-        # Validations
-        if not camera:
-            self.report({'ERROR'}, "No camera in scene!")
+        # Validate setup
+        if not obj:
+            show_error("Please select an armature in the 3D Viewport.")
             return {'CANCELLED'}
         
         if obj.type != 'ARMATURE':
-            self.report({'ERROR'}, "Selected object must be an armature!")
+            show_error(
+                f"The selected object '{obj.name}' is a '{obj.type}', not an armature.\n\n"
+                "Please select an armature with animations."
+            )
+            return {'CANCELLED'}
+        
+        if not camera:
+            show_error(
+                "No camera found in the scene!\n\n"
+                "Please add a camera and make it active."
+            )
+            return {'CANCELLED'}
+        
+        # Validate output path
+        output_dir = bpy.path.abspath(settings.output_path)
+        if not os.path.exists(output_dir):
+            try:
+                os.makedirs(output_dir, exist_ok=True)
+            except:
+                show_error(
+                    f"Cannot access output folder:\n{output_dir}\n\n"
+                    "Please choose a different folder."
+                )
+                return {'CANCELLED'}
+        
+        if not os.access(output_dir, os.W_OK):
+            show_error(
+                f"No write permission for folder:\n{output_dir}\n\n"
+                "Please choose a folder you have write access to."
+            )
             return {'CANCELLED'}
         
         active_animations = [a for a in settings.animations if a.enabled]
         if not active_animations:
-            self.report({'ERROR'}, "Enable at least one animation!")
+            show_error(
+                "No animations enabled!\n\n"
+                "Check the checkboxes next to the animations you want to render."
+            )
             return {'CANCELLED'}
         
         # Get view angles
@@ -600,18 +738,23 @@ class SPRITESHEET_OT_generate(Operator):
         if settings.use_left: view_angles.append(270)
         
         if not view_angles:
-            view_angles = [0]
+            show_error(
+                "No view angles selected!\n\n"
+                "Please select at least one view angle (Front, Right, Back, Left)."
+            )
+            return {'CANCELLED'}
         
         angle_names = {0: "front", 90: "right", 180: "back", 270: "left"}
         
         print("\n" + "="*70)
-        print(f"SPRITE SHEET GENERATOR v2.0 - ARMATURE ROTATION MODE")
+        print(f"SPRITE SHEET GENERATOR v2.1 - ARMATURE ROTATION MODE")
         print("="*70)
         print(f"Active animations: {len(active_animations)}")
         print(f"View angles: {[f'{angle_names.get(a, a)} ({a}°)' for a in view_angles]}")
         print(f"Total rows: {len(active_animations) * len(view_angles)}")
+        print(f"Output: {os.path.join(output_dir, settings.output_filename)}.png")
         
-        # PRE-ANALYZE ALL ANIMATIONS
+        # Pre-analyze animations
         animation_analyses = {}
         max_sprite_width = settings.base_sprite_width
         max_sprite_height = settings.base_sprite_height
@@ -648,9 +791,9 @@ class SPRITESHEET_OT_generate(Operator):
                         
                         print(f"  {anim.name}: {scale:.2f}x -> {sprite_w}x{sprite_h}px")
         
-        print(f"\nUnified sprite size: {max_sprite_width}x{max_sprite_height}px")
+        print(f"\nSprite size: {max_sprite_width}x{max_sprite_height}px")
         
-        # SAVE ORIGINAL STATE
+        # Save original state
         original_frame = scene.frame_current
         original_action = obj.animation_data.action if obj.animation_data else None
         original_rotation = obj.rotation_euler.copy()
@@ -659,6 +802,7 @@ class SPRITESHEET_OT_generate(Operator):
         orig_res_x = scene.render.resolution_x
         orig_res_y = scene.render.resolution_y
         orig_percentage = scene.render.resolution_percentage
+        orig_transparent = scene.render.film_transparent
         
         # Setup render
         scene.render.resolution_x = max_sprite_width
@@ -672,7 +816,6 @@ class SPRITESHEET_OT_generate(Operator):
         all_frames = []
         
         try:
-            # PROCESS EACH ANIMATION
             for anim_idx, anim in enumerate(active_animations):
                 print(f"\n{'='*50}")
                 print(f"Animation {anim_idx+1}/{len(active_animations)}: {anim.name}")
@@ -682,7 +825,6 @@ class SPRITESHEET_OT_generate(Operator):
                     print(f"  WARNING: '{anim.action_name}' not found, skipping!")
                     continue
                 
-                # Get sprite size for this animation
                 if settings.use_dynamic_sizing and anim.name in animation_analyses:
                     analysis = animation_analyses[anim.name]
                     sprite_w = analysis['sprite_width']
@@ -693,39 +835,31 @@ class SPRITESHEET_OT_generate(Operator):
                     sprite_h = max_sprite_height
                     center_offset = 0.0
                 
-                # Apply action
                 SpriteSheetCore.apply_action_to_object(
                     obj, action, anim.frame_start, anim.frame_end
                 )
                 
-                # Select frames
                 frame_list = SpriteSheetCore.interpolate_frames(
                     anim.frame_start, anim.frame_end, anim.target_frames
                 )
                 
                 print(f"  Frames: {len(frame_list)} [{anim.frame_start}-{anim.frame_end}]")
                 
-                # RENDER EACH ANGLE
                 for angle_idx, angle in enumerate(view_angles):
                     angle_name = angle_names.get(angle, str(angle))
                     full_name = f"{anim.name}_{angle_name}"
                     
-                    print(f"\n  [{angle_idx+1}/{len(view_angles)}] {angle_name} ({angle}°)")
+                    print(f"  [{angle_idx+1}/{len(view_angles)}] {angle_name} ({angle}°)")
                     
-                    # ROTATE ARMATURE
                     obj.rotation_euler = original_rotation.copy()
                     SpriteSheetCore.rotate_armature(obj, angle)
-                    
-                    # Update scene to apply rotation
                     bpy.context.view_layer.update()
                     
                     frame_paths = []
                     
-                    # RENDER EACH FRAME
                     for i, frame in enumerate(frame_list):
                         scene.frame_set(frame)
                         
-                        # Track origin with camera
                         if settings.track_origin:
                             SpriteSheetCore.position_camera_for_frame(
                                 camera, obj, center_offset
@@ -736,30 +870,31 @@ class SPRITESHEET_OT_generate(Operator):
                         scene.render.resolution_y = sprite_h
                         SpriteSheetCore.render_frame(scene, frame, temp_path)
                         frame_paths.append(temp_path)
-                        
-                        if (i + 1) % 5 == 0 or i == 0:
-                            print(f"    Frame {i+1}/{len(frame_list)} rendered")
                     
                     all_frames.append((full_name, frame_paths, sprite_w, sprite_h))
-                    print(f"  ✓ {len(frame_paths)} frames rendered")
+                    print(f"  Done: {len(frame_paths)} frames rendered")
                     
-                    # RESET ARMATURE ROTATION
                     obj.rotation_euler = original_rotation.copy()
                     bpy.context.view_layer.update()
             
-            # CREATE FINAL SPRITE SHEET
             if all_frames:
                 self.create_final_sprite_sheet(all_frames, settings)
+                show_info(
+                    f"Sprite sheet saved successfully!\n\n"
+                    f"File: {settings.output_filename}.png\n"
+                    f"Location: {output_dir}\n"
+                    f"Rows: {len(all_frames)}\n"
+                    f"Size: {max_sprite_width}x{max_sprite_height}px per sprite"
+                )
             else:
-                self.report({'ERROR'}, "No frames were rendered!")
+                show_error("No frames were rendered. Check the console for details.")
                 
         except Exception as e:
-            self.report({'ERROR'}, f"Error: {str(e)}")
+            show_error(f"Render error: {str(e)}")
             import traceback
             traceback.print_exc()
             
         finally:
-            # RESTORE EVERYTHING
             print(f"\nRestoring original state...")
             
             if obj.animation_data:
@@ -773,23 +908,22 @@ class SPRITESHEET_OT_generate(Operator):
             scene.render.resolution_x = orig_res_x
             scene.render.resolution_y = orig_res_y
             scene.render.resolution_percentage = orig_percentage
+            scene.render.film_transparent = orig_transparent
             
             if os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir)
                 print("Temporary files cleaned up")
             
-            print(f"✓ Complete!")
+            print(f"Done!")
         
         return {'FINISHED'}
     
     def create_final_sprite_sheet(self, all_frames, settings):
-        """Combine all frames into final sprite sheet with variable sizes."""
+        """Combine all frames into final sprite sheet."""
         
-        # Find maximum sprite dimensions
         max_w = max(frame_data[2] for frame_data in all_frames)
         max_h = max(frame_data[3] for frame_data in all_frames)
         
-        # Ensure minimum size
         max_w = max(max_w, 1)
         max_h = max(max_h, 1)
         
@@ -801,15 +935,11 @@ class SPRITESHEET_OT_generate(Operator):
         print(f"CREATING SPRITE SHEET")
         print(f"  Max sprite: {max_w}x{max_h}px")
         print(f"  Sheet: {sheet_width}x{sheet_height}px")
-        print(f"  Rows: {total_rows}")
         
-        # Create empty sheet (transparent background)
         sheet_pixels = np.zeros((sheet_height, sheet_width, 4), dtype=np.float32)
         
         for row, (anim_name, frame_paths, sprite_w, sprite_h) in enumerate(all_frames):
             placed = 0
-            
-            # Ensure valid dimensions
             actual_w = max(1, sprite_w)
             actual_h = max(1, sprite_h)
             
@@ -817,16 +947,11 @@ class SPRITESHEET_OT_generate(Operator):
                 if col >= settings.columns:
                     break
                 
-                # Load and process frame
                 img = bpy.data.images.load(frame_path)
                 pixels = np.array(img.pixels)
                 
-                # Validate array size
                 expected_size = actual_h * actual_w * 4
                 if len(pixels) != expected_size:
-                    print(f"  WARNING: Size mismatch for {anim_name} frame {col}")
-                    print(f"    Expected: {expected_size}, Got: {len(pixels)}")
-                    # Try to reshape with actual loaded dimensions
                     actual_pixels = len(pixels) // 4
                     actual_h = int(math.sqrt(actual_pixels * actual_h / actual_w))
                     actual_w = actual_pixels // actual_h
@@ -836,11 +961,9 @@ class SPRITESHEET_OT_generate(Operator):
                 
                 pixels = pixels.reshape((actual_h, actual_w, 4))
                 
-                # Flip Y if needed
                 if settings.flip_y:
                     pixels = np.flipud(pixels)
                 
-                # Center sprite in max-sized cell
                 y_offset = (max_h - actual_h) // 2
                 x_offset = (max_w - actual_w) // 2
                 
@@ -849,11 +972,9 @@ class SPRITESHEET_OT_generate(Operator):
                 x_start = col * max_w + x_offset
                 x_end = x_start + actual_w
                 
-                # Ensure we don't exceed sheet boundaries
                 y_end = min(y_end, sheet_height)
                 x_end = min(x_end, sheet_width)
                 
-                # Adjust pixels if boundaries were clipped
                 if y_end - y_start < actual_h:
                     pixels = pixels[:y_end - y_start, :, :]
                 if x_end - x_start < actual_w:
@@ -865,7 +986,6 @@ class SPRITESHEET_OT_generate(Operator):
             
             print(f"  Row {row}: {anim_name} ({placed} frames, {actual_w}x{actual_h}px)")
         
-        # Save sprite sheet
         output_path = os.path.join(
             bpy.path.abspath(settings.output_path),
             f"{settings.output_filename}.png"
@@ -887,14 +1007,13 @@ class SPRITESHEET_OT_generate(Operator):
         sheet_img.save()
         bpy.data.images.remove(sheet_img)
         
-        print(f"\n✓ Sprite sheet saved: {output_path}")
-        print(f"  Total: {total_rows} rows, {sheet_width}x{sheet_height}px")
+        print(f"\nSprite sheet saved: {output_path}")
         
-        # Create metadata file
+        # Save metadata
         self.save_metadata(output_path, all_frames, max_w, max_h, settings)
     
     def save_metadata(self, output_path, all_frames, max_w, max_h, settings):
-        """Save metadata JSON file alongside sprite sheet."""
+        """Save metadata JSON file."""
         metadata_path = output_path.replace('.png', '_metadata.json')
         
         metadata = {
@@ -918,7 +1037,7 @@ class SPRITESHEET_OT_generate(Operator):
         with open(metadata_path, 'w') as f:
             json.dump(metadata, f, indent=2)
         
-        print(f"✓ Metadata saved: {metadata_path}")
+        print(f"Metadata saved: {metadata_path}")
 
 # ==================== UI LIST ====================
 
@@ -948,7 +1067,7 @@ class SPRITESHEET_UL_animations(UIList):
 
 class VIEW3D_PT_sprite_sheet(Panel):
     """Main sprite sheet panel."""
-    bl_label = "Sprite Sheet Generator v2.0"
+    bl_label = "Sprite Sheet Generator v2.1"
     bl_idname = "VIEW3D_PT_sprite_sheet"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -958,6 +1077,12 @@ class VIEW3D_PT_sprite_sheet(Panel):
         layout = self.layout
         settings = context.scene.spritesheet_settings
         
+        # Help button at top
+        row = layout.row(align=True)
+        row.operator("spritesheet.show_help", text="Help / Instructions", icon='HELP')
+        
+        layout.separator()
+        
         # Object info
         box = layout.box()
         box.label(text="Selected Object:", icon='OBJECT_DATA')
@@ -966,7 +1091,7 @@ class VIEW3D_PT_sprite_sheet(Panel):
             icon = 'ARMATURE_DATA' if obj.type == 'ARMATURE' else 'OBJECT_DATA'
             box.label(text=f"  {obj.name} ({obj.type})", icon=icon)
             if obj.type != 'ARMATURE':
-                box.label(text="  Warning: Armature required!", icon='ERROR')
+                box.label(text="  Select an ARMATURE!", icon='ERROR')
         else:
             box.label(text="  No object selected!", icon='ERROR')
         
@@ -998,20 +1123,19 @@ class VIEW3D_PT_sprite_sheet(Panel):
         
         box.prop(settings, "columns")
         box.prop(settings, "flip_y")
+        box.prop(settings, "track_origin")
         
         layout.separator()
         
-        # View angles (armature rotation)
+        # View angles
         box = layout.box()
         box.label(text="View Angles (Armature Rotation):", icon='ORIENTATION_VIEW')
         
         row = box.row(align=True)
-        row.prop(settings, "use_front", toggle=True, text="Front")
-        row.prop(settings, "use_right", toggle=True, text="Right")
-        row.prop(settings, "use_back", toggle=True, text="Back")
-        row.prop(settings, "use_left", toggle=True, text="Left")
-        
-        box.prop(settings, "track_origin", icon='PIVOT_ACTIVE')
+        row.prop(settings, "use_front", toggle=True)
+        row.prop(settings, "use_right", toggle=True)
+        row.prop(settings, "use_back", toggle=True)
+        row.prop(settings, "use_left", toggle=True)
         
         layout.separator()
         
@@ -1056,6 +1180,7 @@ class VIEW3D_PT_sprite_sheet(Panel):
 classes = [
     AnimationItem,
     SpriteSheetSettings,
+    SPRITESHEET_OT_help,
     SPRITESHEET_OT_analyze_animation,
     SPRITESHEET_OT_detect_actions,
     SPRITESHEET_OT_clear_list,
@@ -1068,18 +1193,18 @@ classes = [
 ]
 
 def register():
-    print("Sprite Sheet Generator v2.0 - Armature Rotation Mode")
+    print("Sprite Sheet Generator v2.1 - Registering...")
     for cls in classes:
         bpy.utils.register_class(cls)
     bpy.types.Scene.spritesheet_settings = PointerProperty(type=SpriteSheetSettings)
-    print("✓ Registered successfully!")
+    print("✓ Registered!")
 
 def unregister():
-    print("Unregistering Sprite Sheet Generator...")
+    print("Sprite Sheet Generator - Unregistering...")
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
     del bpy.types.Scene.spritesheet_settings
-    print("✓ Unregistered successfully!")
+    print("✓ Unregistered!")
 
 if __name__ == "__main__":
     register()
