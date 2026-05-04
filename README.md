@@ -52,6 +52,8 @@ Automatic JSON metadata file with:
 ![Sprite Sheet Generator Panel](screenshots/result.png)
 
 ## Installation
+Blender 4.2.0 and newer: Install directly from Blender Extensions (Edit > Preferences > Get Extensions) or download from the GitHub Releases page.
+Blender 3.6+ (manual install from GitHub)
 
 From Blender Extensions 
 1. Open Blender (3.6 or newer)
